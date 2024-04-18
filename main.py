@@ -5,7 +5,6 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torch.utils.data import DataLoader
 
-# Define a simple neural network
 class SimpleNN(nn.Module):
     def __init__(self):
         super(SimpleNN, self).__init__()
@@ -21,39 +20,30 @@ class SimpleNN(nn.Module):
         logits = self.linear_relu_stack(x)
         return logits
 
-# Load the MNIST dataset
-transform = transforms.Compose([transforms.ToTensor()])
-train_dataset = datasets.MNIST(root="data", train=True, transform=transform, download=True)
-train_loader = DataLoader(dataset=train_dataset, batch_size=64, shuffle=True)
+def train(dataloader, model, loss_fn, optimizer):
+    size = len(dataloader.dataset)
+    for batch, (X, labels) in enumerate(dataloader):
+        pred = model(X)
+        loss = loss_fn(pred, labels)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
-# Initialize the neural network, loss function, and optimizer
-model = SimpleNN()
-loss_fn = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+        if batch % 100 == 0:
+            loss, current = loss.item(), batch * len(X)
+            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
-# Training loop with indefinite training
-def train_indefinitely(dataloader, model, loss_fn, optimizer):
-    epoch = 0
-    while True:  # Infinite loop
-        print(f"Starting epoch {epoch+1}")
-        for batch, (X, labels) in enumerate(dataloader):
-            # Compute prediction and loss
-            pred = model(X)
-            loss = loss_fn(pred, labels)
+def main():
+    transform = transforms.Compose([transforms.ToTensor()])
+    train_dataset = datasets.MNIST(root="data", train=True, transform=transform, download=True)
+    train_loader = DataLoader(dataset=train_dataset, batch_size=64, shuffle=True)
 
-            # Backpropagation
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+    model = SimpleNN()
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-            if batch % 100 == 0:
-                loss, current = loss.item(), batch * len(X)
-                print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+    train(train_loader, model, loss_fn, optimizer)
+    print("Training done!")
 
-        epoch += 1
-        # Save the model checkpoint
-        torch.save(model.state_dict(), f'model_epoch_{epoch}.pth')
-        print(f"Model saved after epoch {epoch}")
-
-# Run the training loop
-train_indefinitely(train_loader, model, loss_fn, optimizer)
+if __name__ == '__main__':
+    main()
