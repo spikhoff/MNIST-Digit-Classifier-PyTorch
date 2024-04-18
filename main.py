@@ -31,23 +31,29 @@ model = SimpleNN()
 loss_fn = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-# Training loop
-def train(dataloader, model, loss_fn, optimizer):
-    size = len(dataloader.dataset)
-    for batch, (X, labels) in enumerate(dataloader):
-        # Compute prediction and loss
-        pred = model(X)
-        loss = loss_fn(pred, labels)
+# Training loop with indefinite training
+def train_indefinitely(dataloader, model, loss_fn, optimizer):
+    epoch = 0
+    while True:  # Infinite loop
+        print(f"Starting epoch {epoch+1}")
+        for batch, (X, labels) in enumerate(dataloader):
+            # Compute prediction and loss
+            pred = model(X)
+            loss = loss_fn(pred, labels)
 
-        # Backpropagation
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+            # Backpropagation
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-        if batch % 100 == 0:
-            loss, current = loss.item(), batch * len(X)
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+            if batch % 100 == 0:
+                loss, current = loss.item(), batch * len(X)
+                print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
-# Train the model
-train(train_loader, model, loss_fn, optimizer)
-print("Training done!")
+        epoch += 1
+        # Save the model checkpoint
+        torch.save(model.state_dict(), f'model_epoch_{epoch}.pth')
+        print(f"Model saved after epoch {epoch}")
+
+# Run the training loop
+train_indefinitely(train_loader, model, loss_fn, optimizer)
